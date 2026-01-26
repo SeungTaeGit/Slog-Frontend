@@ -2,6 +2,16 @@ import { ApiResponse, PageResponse, PostResponseDto, PostSearchCondition, Sideba
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
+export interface PostSearchCondition {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  categoryName?: string;
+  tagName?: string;
+  seriesName?: string;
+  sort?: string;
+}
+
 const createQueryString = (params: Record<string, any>) => {
   const searchParams = new URLSearchParams();
   Object.keys(params).forEach((key) => {
@@ -19,7 +29,10 @@ export async function getPosts(condition: PostSearchCondition): Promise<PageResp
       cache: 'no-store',
     });
 
-    if (!res.ok) return mockData();
+    if (!res.ok) {
+        console.error(`API Error: ${res.status} ${res.statusText}`);
+        return mockData();
+    }
 
     const response: ApiResponse<PageResponse<PostResponseDto>> = await res.json();
     return response.data;
@@ -36,7 +49,6 @@ export async function getPostDetail(id: number): Promise<PostResponseDto> {
     const response: ApiResponse<PostResponseDto> = await res.json();
     return response.data;
   } catch (error) {
-    console.error('API Error:', error);
     return mockData().content[0];
   }
 }
@@ -50,17 +62,39 @@ export interface CreatePostRequestDto {
   status: 'PUBLIC' | 'PRIVATE';
 }
 
+export interface UpdatePostRequestDto {
+    title?: string;
+    content?: string;
+    categoryName?: string;
+    tags?: string[];
+    seriesName?: string;
+    status?: 'PUBLIC' | 'PRIVATE';
+}
+
 export async function createPost(data: CreatePostRequestDto, token: string = ''): Promise<void> {
   const res = await fetch(`${BASE_URL}/posts`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify(data),
   });
-
   if (!res.ok) throw new Error('Failed to create post');
+}
+
+export async function updatePost(id: number, data: UpdatePostRequestDto, token: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update post');
+}
+
+export async function deletePost(id: number, token: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to delete post');
 }
 
 export async function getSidebarData(): Promise<SidebarDataDto> {
@@ -83,4 +117,16 @@ export async function getSidebarData(): Promise<SidebarDataDto> {
   } catch (error) {
     return { categories: [], tags: [], series: [] };
   }
+}
+
+function mockData(): PageResponse<PostResponseDto> {
+  return {
+    content: [],
+    pageable: { pageNumber: 0, pageSize: 10 },
+    totalPages: 0,
+    totalElements: 0,
+    last: true,
+    size: 10,
+    number: 0
+  };
 }
