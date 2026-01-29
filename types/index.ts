@@ -7,13 +7,16 @@ export interface ApiResponse<T> {
 export interface PostResponseDto {
   id: number;
   title: string;
+  excerpt?: string;
   content: string;
   thumbnailUrl?: string;
   categoryName: string;
   tags: string[];
   seriesName?: string;
-  status: 'PUBLIC' | 'PRIVATE';
+  status: 'PUBLIC' | 'PRIVATE' | 'DRAFT' | 'DELETED';
+  views: number;
   createdAt: string;
+  comments: number;
 }
 
 export interface PostSearchCondition {
@@ -23,6 +26,8 @@ export interface PostSearchCondition {
   categoryName?: string;
   tagName?: string;
   seriesName?: string;
+  sort?: string;
+  status?: string;
 }
 
 export interface PageResponse<T> {
@@ -36,4 +41,38 @@ export interface PageResponse<T> {
   last: boolean;
   size: number;
   number: number;
+}
+
+export interface CategoryResponseDto {
+  id: number;
+  name: string;
+  count: number;
+}
+
+export interface SeriesResponseDto {
+  id: number;
+  name: string;
+  count: number;
+}
+
+export interface SidebarDataDto {
+  categories: CategoryResponseDto[];
+  tags: string[];
+  series: SeriesResponseDto[];
+}
+
+export interface DashboardStatsDto {
+  totalPosts: number;
+  totalViews: number;
+  todayPosts: number;
+  totalCategories: number;
+  totalSeries: number;
+}
+
+export interface SystemHealthDto {
+  status: string;
+  details?: any;
+}
+
+export interface AdminPostDto extends PostResponseDto {
 }

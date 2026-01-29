@@ -1,4 +1,4 @@
-import { ApiResponse, PageResponse, PostResponseDto, PostSearchCondition, SidebarDataDto } from '@/types';
+import { ApiResponse, PageResponse, PostResponseDto, PostSearchCondition, SidebarDataDto, DashboardStatsDto } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
@@ -71,6 +71,48 @@ export interface UpdatePostRequestDto {
     status?: 'PUBLIC' | 'PRIVATE';
 }
 
+export async function getDashboardStats(token: string): Promise<DashboardStatsDto> {
+  const res = await fetch(`${BASE_URL}/admin/dashboard`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+  if (!res.ok) throw new Error('Failed to fetch dashboard stats');
+  const response: ApiResponse<DashboardStatsDto> = await res.json();
+  return response.data;
+}
+
+export async function getSystemHealth(token: string): Promise<string> {
+  try {
+    const res = await fetch('http://localhost:8080/actuator/health', {
+      headers: { 'Authorization': `Bearer ${token}` },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) return 'DOWN';
+    const data = await res.json();
+    return data.status;
+  } catch (e) {
+    return 'DOWN';
+  }
+}
+
+export async function getAdminPosts(token: string, page: number, status?: string, keyword?: string): Promise<PageResponse<PostResponseDto>> {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', '10');
+  if (status) params.append('status', status);
+  if (keyword) params.append('keyword', keyword);
+
+  const res = await fetch(`${BASE_URL}/admin/posts?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+
+  if (!res.ok) throw new Error('Failed to fetch admin posts');
+  const response = await res.json();
+  return response.data;
+}
+
 export async function createPost(data: CreatePostRequestDto, token: string = ''): Promise<void> {
   const res = await fetch(`${BASE_URL}/posts`, {
     method: 'POST',
@@ -95,6 +137,46 @@ export async function deletePost(id: number, token: string): Promise<void> {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (!res.ok) throw new Error('Failed to delete post');
+}
+
+export async function updateCategory(id: number, newName: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/categories/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ newName }),
+  });
+  if (!res.ok) throw new Error('Failed to update category');
+}
+
+export async function deleteCategory(id: number, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/categories/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Failed to delete category');
+  }
+}
+
+export async function updateSeries(id: number, newName: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/series/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ newName }),
+  });
+  if (!res.ok) throw new Error('Failed to update series');
+}
+
+export async function deleteSeries(id: number, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/series/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Failed to delete series');
+  }
 }
 
 export async function getSidebarData(): Promise<SidebarDataDto> {
@@ -129,4 +211,36 @@ function mockData(): PageResponse<PostResponseDto> {
     size: 10,
     number: 0
   };
+}
+
+export async function updatePostStatus(id: number, status: 'PUBLIC' | 'PRIVATE', token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/posts/${id}/status?status=${status}`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to update post status');
+}
+
+export async function restorePost(id: number, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/posts/${id}/restore`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to restore post');
+}
+
+export async function hardDeletePost(id: number, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/posts/${id}/hard`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to hard delete post');
+}
+
+export async function softDeletePost(id: number, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/admin/posts/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to soft delete post');
 }
