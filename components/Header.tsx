@@ -1,17 +1,40 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { Search, PenTool, LogOut, LogIn } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from './ThemeToggle';
+import UserDropdown from './UserDropdown';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   const pathname = usePathname();
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn } = useAuth();
+  const scrollDirection = useScrollDirection();
+
+  const [isHomeIntro, setIsHomeIntro] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (pathname === '/') {
+        if (window.scrollY < window.innerHeight - 100) {
+          setIsHomeIntro(true);
+        } else {
+          setIsHomeIntro(false);
+        }
+      } else {
+        setIsHomeIntro(false);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
 
   if (pathname === '/admin/write') return null;
 
@@ -22,9 +45,14 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-white/20 dark:border-gray-800/50 transition-colors duration-300">
+    <header
+      className={`fixed top-0 left-0 w-full z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-white/20 dark:border-gray-800/50 transition-transform duration-500 ease-in-out ${
+        isHomeIntro || scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
+        {/* 로고 */}
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-1 cursor-pointer group">
             <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">S</div>
@@ -32,6 +60,7 @@ export default function Header() {
           </Link>
         </div>
 
+        {/* 검색창 */}
         <div className="relative w-full max-w-md hidden md:block group mx-4">
           <input
             type="text"
@@ -44,18 +73,12 @@ export default function Header() {
           <Search className="absolute left-3.5 top-2.5 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={18} />
         </div>
 
+        {/* 우측 메뉴 */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
 
           {isLoggedIn ? (
-            <>
-              <Link href="/admin/write" className="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">
-                <PenTool size={16} /> Write
-              </Link>
-              <button onClick={logout} className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition" title="Logout">
-                <LogOut size={20} />
-              </button>
-            </>
+            <UserDropdown />
           ) : (
              <div className="w-1 h-1"></div>
           )}

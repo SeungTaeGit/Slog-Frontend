@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import ScrollTopButton from "@/components/ScrollTopButton";
 
 export const metadata: Metadata = {
   metadataBase: new URL('http://localhost:3000'),
@@ -41,6 +42,7 @@ export default function RootLayout({
           <AuthProvider>
             <Header />
             {children}
+            <ScrollTopButton />
           </AuthProvider>
         </ThemeProvider>
       </body>

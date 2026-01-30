@@ -1,10 +1,135 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAdminPosts, updatePostStatus, softDeletePost, restorePost, hardDeletePost } from '@/lib/api';
 import { PostResponseDto } from '@/types';
-import { Edit, Trash2, Eye, EyeOff, RefreshCcw, XCircle, Search, Filter } from 'lucide-react';
+import { Edit, Trash2, RefreshCcw, XCircle, Filter, CheckCircle2, Globe, LockKeyhole, FileQuestion, ChevronDown, FileText } from 'lucide-react';
+
+const PostRow = ({
+  post,
+  onStatusChange,
+  onSoftDelete,
+  onRestore,
+  onHardDelete,
+  onEdit
+}: {
+  post: PostResponseDto;
+  onStatusChange: (id: number, status: string) => void;
+  onSoftDelete: (id: number) => void;
+  onRestore: (id: number) => void;
+  onHardDelete: (id: number) => void;
+  onEdit: (id: number) => void;
+}) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const statusConfig: Record<string, { icon: any, color: string, bg: string, label: string }> = {
+    PUBLIC: { icon: Globe, color: 'text-green-600', bg: 'bg-green-100/80 dark:bg-green-900/30', label: 'Public' },
+    PRIVATE: { icon: LockKeyhole, color: 'text-gray-500', bg: 'bg-gray-100/80 dark:bg-gray-700/50', label: 'Private' },
+    DELETED: { icon: Trash2, color: 'text-red-600', bg: 'bg-red-100/80 dark:bg-red-900/30', label: 'Trash' },
+    DRAFT: { icon: FileText, color: 'text-yellow-600', bg: 'bg-yellow-100/80 dark:bg-yellow-900/30', label: 'Draft' },
+  };
+
+  const safeStatus = post.status || 'DRAFT';
+  const currentStatus = statusConfig[safeStatus] || {
+    icon: FileQuestion, color: 'text-gray-500', bg: 'bg-gray-100', label: safeStatus
+  };
+  const StatusIcon = currentStatus.icon;
+
+  return (
+    <tr className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100/50 dark:border-gray-800 last:border-none">
+      <td className="px-6 py-5">
+        <div className="font-bold text-gray-800 dark:text-gray-100 line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors text-base" onClick={() => window.open(`/posts/${post.id}`, '_blank')}>
+          {post.title}
+        </div>
+        <div className="text-xs text-gray-400 mt-1.5 flex gap-2 font-medium">
+            <span>{post.createdAt}</span>
+            <span className="text-gray-300">•</span>
+            <span>{post.views} views</span>
+        </div>
+      </td>
+      <td className="px-6 py-5 text-sm text-gray-500 dark:text-gray-400">
+        <span className="bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 px-2.5 py-1 rounded-lg text-xs font-medium shadow-sm">
+          {post.categoryName}
+        </span>
+      </td>
+      <td className="px-6 py-5">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-sm ${currentStatus.bg} ${currentStatus.color}`}>
+          <StatusIcon size={12} /> {currentStatus.label}
+        </span>
+      </td>
+      <td className="px-6 py-5 text-right">
+        <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+          {post.status === 'DELETED' ? (
+            <>
+              <button onClick={() => onRestore(post.id)} className="p-2 text-green-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-green-200 hover:bg-green-50 rounded-xl transition-all shadow-sm" title="Restore">
+                <RefreshCcw size={16} />
+              </button>
+              <button onClick={() => onHardDelete(post.id)} className="p-2 text-red-600 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all shadow-sm" title="Permanently Delete">
+                <XCircle size={16} />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm bg-white dark:bg-gray-800 ${
+                    isMenuOpen
+                      ? 'border-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/30'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  <StatusIcon size={14} className={currentStatus.color} />
+                  <span className="text-gray-700 dark:text-gray-300">{currentStatus.label}</span>
+                  <ChevronDown size={12} className="text-gray-400" />
+                </button>
+
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl z-20 overflow-hidden animate-fadeIn">
+                    <button
+                      onClick={() => { onStatusChange(post.id, 'PUBLIC'); setIsMenuOpen(false); }}
+                      className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-600 hover:text-green-700 transition-colors"
+                    >
+                      <Globe size={14} /> Public
+                    </button>
+                    <button
+                      onClick={() => { onStatusChange(post.id, 'PRIVATE'); setIsMenuOpen(false); }}
+                      className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                    >
+                      <LockKeyhole size={14} /> Private
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+
+              <button onClick={() => onEdit(post.id)} className="p-2 text-gray-500 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 rounded-xl transition-all shadow-sm" title="Edit">
+                <Edit size={16} />
+              </button>
+
+              <button onClick={() => onSoftDelete(post.id)} className="p-2 text-gray-500 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all shadow-sm" title="Trash">
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+};
 
 export default function AdminPostsPage() {
   const router = useRouter();
@@ -19,7 +144,6 @@ export default function AdminPostsPage() {
       router.replace('/login');
       return;
     }
-
     setLoading(true);
     try {
       const data = await getAdminPosts(token, page, statusFilter || undefined);
@@ -35,16 +159,15 @@ export default function AdminPostsPage() {
     fetchPosts();
   }, [fetchPosts]);
 
-  const handleStatusChange = async (id: number, newStatus: 'PUBLIC' | 'PRIVATE') => {
+  const handleStatusChange = async (id: number, newStatus: string) => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    if (!confirm(`글 상태를 ${newStatus}로 변경하시겠습니까?`)) return;
-
     try {
-      await updatePostStatus(id, newStatus, token);
-      fetchPosts();
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus as any } : p));
+      await updatePostStatus(id, newStatus as 'PUBLIC' | 'PRIVATE', token);
     } catch (e) {
       alert('상태 변경 실패');
+      fetchPosts();
     }
   };
 
@@ -52,7 +175,6 @@ export default function AdminPostsPage() {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
     if (!confirm('휴지통으로 이동하시겠습니까?')) return;
-
     try {
       await softDeletePost(id, token);
       fetchPosts();
@@ -64,8 +186,6 @@ export default function AdminPostsPage() {
   const handleRestore = async (id: number) => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    if (!confirm('글을 복구하시겠습니까? (PUBLIC 상태로 전환됩니다)')) return;
-
     try {
       await restorePost(id, token);
       fetchPosts();
@@ -77,8 +197,7 @@ export default function AdminPostsPage() {
   const handleHardDelete = async (id: number) => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    if (!confirm('🔥 정말로 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다!')) return;
-
+    if (!confirm('🔥 정말로 영구 삭제하시겠습니까? 복구 불가!')) return;
     try {
       await hardDeletePost(id, token);
       fetchPosts();
@@ -89,37 +208,37 @@ export default function AdminPostsPage() {
 
   const tabs = [
     { label: 'All Posts', value: '' },
-    { label: 'Public', value: 'PUBLIC' },
+    { label: 'Published', value: 'PUBLIC' },
     { label: 'Private', value: 'PRIVATE' },
     { label: 'Trash', value: 'DELETED' },
   ];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* 헤더 */}
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Posts Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">게시글 상태를 관리하고 정리합니다.</p>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Posts</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">콘텐츠를 관리하고 발행합니다.</p>
         </div>
         <button
           onClick={() => router.push('/admin/write')}
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-500/30"
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:-translate-y-0.5"
         >
-          + Write New Post
+          <Edit size={18} /> Write New
         </button>
       </div>
 
-      {/* 필터 탭 */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-1 overflow-x-auto">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200/50 dark:border-gray-700/50 pb-1 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => { setStatusFilter(tab.value); setPage(0); }}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+            className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${
               statusFilter === tab.value
-                ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50'
             }`}
           >
             {tab.label}
@@ -127,78 +246,39 @@ export default function AdminPostsPage() {
         ))}
       </div>
 
-      {/* 테이블 */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Table Container */}
+      <div className="bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-gray-700/50 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-gray-500">Loading posts...</div>
+          <div className="p-32 text-center text-gray-400 font-medium">Loading posts...</div>
         ) : posts.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">글이 없습니다.</div>
+          <div className="p-32 text-center text-gray-400 flex flex-col items-center gap-4">
+             <div className="w-16 h-16 bg-white/50 dark:bg-gray-700/50 rounded-full flex items-center justify-center shadow-sm">
+                <FileQuestion size={32} className="opacity-50"/>
+             </div>
+             <p className="font-medium">작성된 글이 없습니다.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-6 py-4 font-semibold">Title</th>
-                  <th className="px-6 py-4 font-semibold">Category</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 font-semibold">Date</th>
-                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <tr className="border-b border-gray-100/50 dark:border-gray-700/50 text-xs font-bold uppercase text-gray-400 dark:text-gray-500 tracking-wider">
+                  <th className="px-6 py-5 w-1/2">Title</th>
+                  <th className="px-6 py-5">Category</th>
+                  <th className="px-6 py-5">Status</th>
+                  <th className="px-6 py-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              <tbody>
                 {posts.map((post) => (
-                  <tr key={post.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{post.title}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">{post.categoryName}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        post.status === 'PUBLIC' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                        post.status === 'PRIVATE' ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' :
-                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      }`}>
-                        {post.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {post.createdAt}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {post.status === 'DELETED' ? (
-                          <>
-                            <button onClick={() => handleRestore(post.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Restore">
-                              <RefreshCcw size={18} />
-                            </button>
-                            <button onClick={() => handleHardDelete(post.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Hard Delete">
-                              <XCircle size={18} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => router.push(`/admin/write?id=${post.id}`)} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit">
-                              <Edit size={18} />
-                            </button>
-                            {post.status === 'PUBLIC' ? (
-                              <button onClick={() => handleStatusChange(post.id, 'PRIVATE')} className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg" title="Make Private">
-                                <EyeOff size={18} />
-                              </button>
-                            ) : (
-                              <button onClick={() => handleStatusChange(post.id, 'PUBLIC')} className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Make Public">
-                                <Eye size={18} />
-                              </button>
-                            )}
-                            <button onClick={() => handleSoftDelete(post.id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Move to Trash">
-                              <Trash2 size={18} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <PostRow
+                    key={post.id}
+                    post={post}
+                    onStatusChange={handleStatusChange}
+                    onSoftDelete={handleSoftDelete}
+                    onRestore={handleRestore}
+                    onHardDelete={handleHardDelete}
+                    onEdit={(id) => router.push(`/admin/write?id=${id}`)}
+                  />
                 ))}
               </tbody>
             </table>
