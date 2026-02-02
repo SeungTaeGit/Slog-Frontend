@@ -27,7 +27,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-[100px] opacity-50"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
         <div className="flex flex-col md:flex-row gap-12 lg:gap-16">
 
           <aside className="hidden md:block w-64 flex-shrink-0 h-fit sticky top-28">

@@ -43,7 +43,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
           <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-[100px] opacity-50"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fadeIn">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 animate-fadeIn">
         <BackButton />
 
         <div className="flex flex-col xl:flex-row gap-10 items-start">

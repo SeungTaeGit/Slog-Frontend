@@ -4,6 +4,14 @@ import { AuthProvider } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ScrollTopButton from "@/components/ScrollTopButton";
+import Footer from "@/components/Footer";
+import { JetBrains_Mono } from "next/font/google";
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('http://localhost:3000'),
@@ -32,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body>
+      <body className={`${jetbrainsMono.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -43,6 +51,7 @@ export default function RootLayout({
             <Header />
             {children}
             <ScrollTopButton />
+            <Footer />
           </AuthProvider>
         </ThemeProvider>
       </body>
