@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, FileText, List, Settings, LogOut, PenTool, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, FileText, List, Settings, LogOut, PenTool, ArrowLeft, Activity } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Posts', href: '/admin/posts', icon: FileText },
     { name: 'Metadata', href: '/admin/metadata', icon: List },
+    { name: 'System Logs', href: '/admin/logs', icon: Activity },
   ];
 
   return (

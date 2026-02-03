@@ -4,7 +4,9 @@ import {
   PostResponseDto,
   PostSearchCondition,
   SidebarDataDto,
-  DashboardStatsDto
+  DashboardStatsDto,
+  SystemLogDto,
+  LogSearchCondition
 } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
@@ -261,4 +263,23 @@ function mockData(): PageResponse<PostResponseDto> {
     size: 10,
     number: 0
   };
+}
+
+export async function getSystemLogs(condition: LogSearchCondition, token: string): Promise<PageResponse<SystemLogDto>> {
+  const params = new URLSearchParams();
+  params.append('page', String(condition.page || 0));
+  params.append('size', String(condition.size || 15));
+
+  if (condition.level && condition.level !== 'ALL') {
+    params.append('level', condition.level);
+  }
+
+  const res = await fetch(`${BASE_URL}/admin/logs?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+    cache: 'no-store'
+  });
+
+  if (!res.ok) throw new Error('Failed to fetch system logs');
+  const response = await res.json();
+  return response.data;
 }

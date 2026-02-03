@@ -76,3 +76,20 @@ export interface SystemHealthDto {
 
 export interface AdminPostDto extends PostResponseDto {
 }
+
+export interface SystemLogDto {
+  id: number;
+  level: 'INFO' | 'WARN' | 'ERROR';
+  method: string;
+  url: string;
+  message: string;
+  stackTrace?: string;
+  clientIp: string;
+  createdAt: string;
+}
+
+export interface LogSearchCondition {
+  page?: number;
+  size?: number;
+  level?: string;
+}
