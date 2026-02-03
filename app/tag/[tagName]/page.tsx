@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { getPosts } from '@/lib/api';
 import PostCard from '@/components/PostCard';
 import Sidebar from '@/components/Sidebar';
-import { Tag, ArrowLeft } from 'lucide-react';
+import { Tag } from 'lucide-react';
 
 interface TagPageProps {
   params: Promise<{ tagName: string }>;
@@ -15,17 +14,13 @@ export default async function TagPage({ params }: TagPageProps) {
   const posts = postData.content;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8F9FF] via-[#F1F5FF] to-[#FFFFFF] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-[#F8F9FF] via-[#F1F5FF] to-[#FFFFFF] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-300">
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-100/40 dark:bg-blue-900/20 rounded-full blur-[120px] opacity-60"></div>
           <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-[100px] opacity-50"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
-        <Link href="/" className="mb-8 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors inline-block">
-          <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center border border-gray-100 dark:border-gray-700 shadow-sm"><ArrowLeft size={16}/></div>
-          Back to list
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
 
         <div className="flex flex-col md:flex-row gap-12 lg:gap-16">
           <aside className="hidden md:block w-64 flex-shrink-0 h-fit sticky top-28">

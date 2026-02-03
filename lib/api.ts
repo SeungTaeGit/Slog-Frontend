@@ -5,8 +5,8 @@ import {
   PostSearchCondition,
   SidebarDataDto,
   DashboardStatsDto,
-  SystemLogDto,
-  LogSearchCondition
+  CreatePostRequestDto,
+  UpdatePostRequestDto
 } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
@@ -21,6 +21,7 @@ const createQueryString = (params: Record<string, any>) => {
   return searchParams.toString();
 };
 
+// 1. 게시글 목록 조회
 export async function getPosts(condition: PostSearchCondition): Promise<PageResponse<PostResponseDto>> {
   try {
     const queryString = createQueryString(condition);
@@ -29,38 +30,53 @@ export async function getPosts(condition: PostSearchCondition): Promise<PageResp
     });
 
     if (!res.ok) {
-        console.error(`API Error: ${res.status} ${res.statusText}`);
+        console.error(`API Error (getPosts): ${res.status}`);
         return mockData();
     }
 
     const response: ApiResponse<PageResponse<PostResponseDto>> = await res.json();
-    return response.data;
+    return response.data || mockData();
   } catch (error) {
     console.error('API Error:', error);
     return mockData();
   }
 }
 
-export async function getPostDetail(id: number): Promise<PostResponseDto> {
+// 2. 게시글 상세 조회 (안전장치 강화)
+export async function getPostDetail(id: number, cookieHeaders?: string): Promise<PostResponseDto> {
   try {
-    const res = await fetch(`${BASE_URL}/posts/${id}`, { cache: 'no-store' });
-    if (!res.ok) return mockData().content[0];
+    const headers: HeadersInit = {};
+    if (cookieHeaders) {
+      headers['Cookie'] = cookieHeaders;
+    }
+
+    const res = await fetch(`${BASE_URL}/posts/${id}`, {
+      cache: 'no-store',
+      headers: headers,
+    });
+
+    if (!res.ok) {
+        console.error(`❌ 상세 조회 API 에러 (Status: ${res.status})`);
+        // 에러 시 404를 띄우지 않고 더미 데이터를 보여줘서 확인 가능하게 함
+        return mockData().content[0];
+    }
+
     const response: ApiResponse<PostResponseDto> = await res.json();
+
+    // 데이터가 없으면 더미 데이터 반환
+    if (!response.data) {
+        console.error(`❌ 상세 조회 데이터 없음 (ID: ${id})`);
+        return mockData().content[0];
+    }
+
     return response.data;
   } catch (error) {
+    console.error('❌ 상세 조회 네트워크 오류:', error);
     return mockData().content[0];
   }
 }
 
-export interface CreatePostRequestDto {
-  title: string;
-  content: string;
-  categoryName: string;
-  tags: string[];
-  seriesName?: string;
-  status: 'PUBLIC' | 'PRIVATE';
-}
-
+// 3. 게시글 작성
 export async function createPost(data: CreatePostRequestDto, token: string = ''): Promise<void> {
   const res = await fetch(`${BASE_URL}/posts`, {
     method: 'POST',
@@ -70,21 +86,11 @@ export async function createPost(data: CreatePostRequestDto, token: string = '')
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`❌ 게시글 작성 실패 (Status: ${res.status})`);
-    console.error(`📩 서버 응답: ${errorText}`);
     throw new Error(`Failed to create post: ${res.status} ${errorText}`);
   }
 }
 
-export interface UpdatePostRequestDto {
-    title?: string;
-    content?: string;
-    categoryName?: string;
-    tags?: string[];
-    seriesName?: string;
-    status?: 'PUBLIC' | 'PRIVATE';
-}
-
+// 4. 게시글 수정
 export async function updatePost(id: number, data: UpdatePostRequestDto, token: string): Promise<void> {
     const res = await fetch(`${BASE_URL}/posts/${id}`, {
       method: 'PATCH',
@@ -94,6 +100,7 @@ export async function updatePost(id: number, data: UpdatePostRequestDto, token: 
     if (!res.ok) throw new Error('Failed to update post');
 }
 
+// 5. 게시글 삭제
 export async function deletePost(id: number, token: string): Promise<void> {
     const res = await fetch(`${BASE_URL}/posts/${id}`, {
       method: 'DELETE',
@@ -102,6 +109,7 @@ export async function deletePost(id: number, token: string): Promise<void> {
     if (!res.ok) throw new Error('Failed to delete post');
 }
 
+// 6. 사이드바 데이터 조회
 export async function getSidebarData(): Promise<SidebarDataDto> {
   try {
     const [categoriesRes, tagsRes, seriesRes] = await Promise.all([
@@ -110,6 +118,7 @@ export async function getSidebarData(): Promise<SidebarDataDto> {
       fetch(`${BASE_URL}/series`, { cache: 'no-store' }),
     ]);
 
+    // 하나라도 실패하면 더미 데이터 반환
     if (!categoriesRes.ok || !tagsRes.ok || !seriesRes.ok) {
        throw new Error('API Response Not OK');
     }
@@ -124,20 +133,19 @@ export async function getSidebarData(): Promise<SidebarDataDto> {
       series: seriesData.data || [],
     };
   } catch (error) {
-    console.error('Sidebar Data Fetch Error (Using Mock Data):', error);
+    console.error('Sidebar API Error (Using Mock):', error);
     return {
       categories: [
         { id: 1, name: 'All', count: 12 },
         { id: 2, name: 'Java / Spring', count: 5 },
       ],
-      tags: ['Spring Boot', 'JPA'],
-      series: [
-        { id: 1, name: 'Spring Boot Mastery', count: 3 }
-      ]
+      tags: ['Spring Boot', 'JPA', 'Docker'],
+      series: [{ id: 1, name: 'Spring Boot Mastery', count: 3 }]
     };
   }
 }
 
+// 7. 대시보드 통계 조회
 export async function getDashboardStats(token: string): Promise<DashboardStatsDto> {
   const res = await fetch(`${BASE_URL}/admin/dashboard`, {
     headers: { 'Authorization': `Bearer ${token}` },
@@ -148,6 +156,7 @@ export async function getDashboardStats(token: string): Promise<DashboardStatsDt
   return response.data;
 }
 
+// 8. 시스템 헬스 체크
 export async function getSystemHealth(token?: string): Promise<string> {
   try {
     const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -164,6 +173,7 @@ export async function getSystemHealth(token?: string): Promise<string> {
   }
 }
 
+// 9. 관리자: 게시글 전체 조회
 export async function getAdminPosts(token: string, page: number, status?: string, keyword?: string): Promise<PageResponse<PostResponseDto>> {
   const params = new URLSearchParams();
   params.append('page', String(page));
@@ -181,6 +191,7 @@ export async function getAdminPosts(token: string, page: number, status?: string
   return response.data;
 }
 
+// 10. 관리자: 게시글 상태 변경
 export async function updatePostStatus(id: number, status: 'PUBLIC' | 'PRIVATE', token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/posts/${id}/status?status=${status}`, {
     method: 'PATCH',
@@ -189,6 +200,7 @@ export async function updatePostStatus(id: number, status: 'PUBLIC' | 'PRIVATE',
   if (!res.ok) throw new Error('Failed to update post status');
 }
 
+// 11. 관리자: 게시글 복구
 export async function restorePost(id: number, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/posts/${id}/restore`, {
     method: 'POST',
@@ -197,6 +209,7 @@ export async function restorePost(id: number, token: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to restore post');
 }
 
+// 12. 관리자: 게시글 영구 삭제
 export async function hardDeletePost(id: number, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/posts/${id}/hard`, {
     method: 'DELETE',
@@ -205,6 +218,7 @@ export async function hardDeletePost(id: number, token: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to hard delete post');
 }
 
+// 13. 관리자: 휴지통 보내기 (Soft Delete)
 export async function softDeletePost(id: number, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/posts/${id}`, {
     method: 'DELETE',
@@ -213,6 +227,7 @@ export async function softDeletePost(id: number, token: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to soft delete post');
 }
 
+// 14. 관리자: 카테고리 이름 수정
 export async function updateCategory(id: number, newName: string, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/categories/${id}`, {
     method: 'PATCH',
@@ -222,6 +237,7 @@ export async function updateCategory(id: number, newName: string, token: string)
   if (!res.ok) throw new Error('Failed to update category');
 }
 
+// 15. 관리자: 카테고리 삭제
 export async function deleteCategory(id: number, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/categories/${id}`, {
     method: 'DELETE',
@@ -233,6 +249,7 @@ export async function deleteCategory(id: number, token: string): Promise<void> {
   }
 }
 
+// 16. 관리자: 시리즈 이름 수정
 export async function updateSeries(id: number, newName: string, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/series/${id}`, {
     method: 'PATCH',
@@ -242,6 +259,7 @@ export async function updateSeries(id: number, newName: string, token: string): 
   if (!res.ok) throw new Error('Failed to update series');
 }
 
+// 17. 관리자: 시리즈 삭제
 export async function deleteSeries(id: number, token: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/admin/series/${id}`, {
     method: 'DELETE',
@@ -253,33 +271,47 @@ export async function deleteSeries(id: number, token: string): Promise<void> {
   }
 }
 
+// 18. 시스템 로그 조회
+export async function getSystemLogs(condition: any, token: string): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('page', String(condition.page || 0));
+    params.append('size', String(condition.size || 15));
+    if (condition.level && condition.level !== 'ALL') {
+      params.append('level', condition.level);
+    }
+
+    const res = await fetch(`${BASE_URL}/admin/logs?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) throw new Error('Failed to fetch system logs');
+    const response = await res.json();
+    return response.data;
+}
+
+// 더미 데이터
 function mockData(): PageResponse<PostResponseDto> {
   return {
-    content: [],
+    content: [
+      {
+        id: 1,
+        title: '[Connection Error] 백엔드 연결 실패',
+        excerpt: '백엔드 API 호출에 실패했습니다. 서버가 켜져있는지 확인해주세요.',
+        content: '### 문제 해결 방법\n\n1. 백엔드 서버(Port 8080)가 실행 중인지 확인하세요.\n2. 백엔드 로그에 에러(500, 400 등)가 찍히는지 확인하세요.\n3. CORS 설정이나 쿠키 관련 로직을 점검하세요.',
+        categoryName: 'Error Log',
+        tags: ['Error', 'Check Server'],
+        status: 'PUBLIC',
+        views: 0,
+        createdAt: new Date().toISOString(),
+        comments: 0
+      }
+    ],
     pageable: { pageNumber: 0, pageSize: 10 },
-    totalPages: 0,
-    totalElements: 0,
+    totalPages: 1,
+    totalElements: 1,
     last: true,
     size: 10,
     number: 0
   };
-}
-
-export async function getSystemLogs(condition: LogSearchCondition, token: string): Promise<PageResponse<SystemLogDto>> {
-  const params = new URLSearchParams();
-  params.append('page', String(condition.page || 0));
-  params.append('size', String(condition.size || 15));
-
-  if (condition.level && condition.level !== 'ALL') {
-    params.append('level', condition.level);
-  }
-
-  const res = await fetch(`${BASE_URL}/admin/logs?${params.toString()}`, {
-    headers: { 'Authorization': `Bearer ${token}` },
-    cache: 'no-store'
-  });
-
-  if (!res.ok) throw new Error('Failed to fetch system logs');
-  const response = await res.json();
-  return response.data;
 }

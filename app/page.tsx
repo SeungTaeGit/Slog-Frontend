@@ -94,7 +94,7 @@ export default async function Home() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white mb-8 tracking-tight leading-tight drop-shadow-sm">
-            Building Solid Backend,<br/>
+            Invest in Code,<br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600">
               Recording Every Step.
             </span>
@@ -107,7 +107,7 @@ export default async function Home() {
           </p>
 
           <div className="flex justify-center gap-4">
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-7 py-3.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full font-bold hover:bg-gray-700 dark:hover:bg-gray-200 transition shadow-lg hover:-translate-y-1 text-sm">
+            <a href="https://github.com/SeungTaeGit/Slog" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-7 py-3.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full font-bold hover:bg-gray-700 dark:hover:bg-gray-200 transition shadow-lg hover:-translate-y-1 text-sm">
               <Github size={18} /> GitHub
             </a>
           </div>

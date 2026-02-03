@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAdminPosts, updatePostStatus, softDeletePost, restorePost, hardDeletePost } from '@/lib/api';
 import { PostResponseDto } from '@/types';
-import { Edit, Trash2, RefreshCcw, XCircle, Filter, CheckCircle2, Globe, LockKeyhole, FileQuestion, ChevronDown, FileText } from 'lucide-react';
+import { Edit, Trash2, RefreshCcw, XCircle, Filter, CheckCircle2, Globe, LockKeyhole, FileQuestion, ChevronDown, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PostRow = ({
   post,
@@ -137,6 +137,7 @@ export default function AdminPostsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchPosts = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -148,6 +149,7 @@ export default function AdminPostsPage() {
     try {
       const data = await getAdminPosts(token, page, statusFilter || undefined);
       setPosts(data.content);
+      setTotalPages(data.totalPages);
     } catch (error) {
       console.error("Failed to fetch admin posts", error);
     } finally {
@@ -215,11 +217,10 @@ export default function AdminPostsPage() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Posts</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">콘텐츠를 관리하고 발행합니다.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">작성된 글을 관리하고 발행합니다.</p>
         </div>
         <button
           onClick={() => router.push('/admin/write')}
@@ -229,7 +230,6 @@ export default function AdminPostsPage() {
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200/50 dark:border-gray-700/50 pb-1 overflow-x-auto">
         {tabs.map((tab) => (
           <button
@@ -246,8 +246,7 @@ export default function AdminPostsPage() {
         ))}
       </div>
 
-      {/* Table Container */}
-      <div className="bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-gray-700/50 shadow-sm overflow-hidden">
+      <div className="bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-gray-700/50 shadow-sm overflow-hidden min-h-[500px] flex flex-col justify-between">
         {loading ? (
           <div className="p-32 text-center text-gray-400 font-medium">Loading posts...</div>
         ) : posts.length === 0 ? (
@@ -284,6 +283,26 @@ export default function AdminPostsPage() {
             </table>
           </div>
         )}
+
+        <div className="flex justify-center items-center gap-4 p-6 border-t border-gray-100/50 dark:border-gray-700/50">
+          <button
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="p-2 rounded-full hover:bg-white dark:hover:bg-gray-700 disabled:opacity-30 transition-colors shadow-sm disabled:shadow-none"
+          >
+            <ChevronLeft size={20} className="text-gray-600 dark:text-gray-300" />
+          </button>
+          <span className="text-sm font-bold text-gray-600 dark:text-gray-300 font-mono">
+             {page + 1} / {totalPages || 1}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="p-2 rounded-full hover:bg-white dark:hover:bg-gray-700 disabled:opacity-30 transition-colors shadow-sm disabled:shadow-none"
+          >
+            <ChevronRight size={20} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        </div>
       </div>
     </div>
   );

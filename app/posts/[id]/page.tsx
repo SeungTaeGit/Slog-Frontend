@@ -8,6 +8,8 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Metadata } from 'next';
 import BackButton from '@/components/BackButton';
 import TableOfContents from '@/components/TableOfContents';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
 
 interface PostDetailPageProps {
   params: Promise<{ id: string }>;
@@ -17,6 +19,13 @@ export async function generateMetadata({ params }: PostDetailPageProps): Promise
   const resolvedParams = await params;
   const id = Number(resolvedParams.id);
   const post = await getPostDetail(id);
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+    };
+  }
+
   const thumbnail = post.thumbnailUrl || 'https://via.placeholder.com/1200x630?text=Slog+Tech+Blog';
 
   return {
@@ -32,12 +41,19 @@ export async function generateMetadata({ params }: PostDetailPageProps): Promise
 
 export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const resolvedParams = await params;
-  const post = await getPostDetail(Number(resolvedParams.id));
 
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+
+  const post = await getPostDetail(Number(resolvedParams.id), cookieHeader);
   const generateId = (text: string) => text.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-');
 
+  if (!post) {
+    notFound();
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8F9FF] via-[#F1F5FF] to-[#FFFFFF] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 pb-20 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-[#F8F9FF] via-[#F1F5FF] to-[#FFFFFF] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-300">
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-100/40 dark:bg-blue-900/20 rounded-full blur-[120px] opacity-60"></div>
           <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-[100px] opacity-50"></div>
@@ -47,7 +63,6 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         <BackButton />
 
         <div className="flex flex-col xl:flex-row gap-10 items-start">
-          {/* [Left] Main Article */}
           <article className="flex-1 w-full min-w-0 bg-white/80 dark:bg-gray-800/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-12 shadow-2xl dark:shadow-none border border-white/60 dark:border-gray-700/50 relative overflow-hidden transition-colors">
              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50/50 dark:bg-blue-900/30 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
 
@@ -81,10 +96,9 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
              <div className="prose max-w-none text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line relative z-10">
                <ReactMarkdown
                  components={{
-                   h1: ({node, children, ...props}) => <h1 id={generateId(String(children))} className="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100 border-b dark:border-gray-700 pb-2 scroll-mt-24" {...props}>{children}</h1>,
-                   h2: ({node, children, ...props}) => <h2 id={generateId(String(children))} className="text-2xl font-bold mt-6 mb-3 text-gray-800 dark:text-gray-200 scroll-mt-24" {...props}>{children}</h2>,
-                   h3: ({node, children, ...props}) => <h3 id={generateId(String(children))} className="text-xl font-bold mt-4 mb-2 text-gray-800 dark:text-gray-200 scroll-mt-24" {...props}>{children}</h3>,
-
+                   h1: ({node, children, ...props}) => <h1 id={generateId(String(children))} className="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100 border-b dark:border-gray-700 pb-2 scroll-mt-32" {...props}>{children}</h1>,
+                   h2: ({node, children, ...props}) => <h2 id={generateId(String(children))} className="text-2xl font-bold mt-6 mb-3 text-gray-800 dark:text-gray-200 scroll-mt-32" {...props}>{children}</h2>,
+                   h3: ({node, children, ...props}) => <h3 id={generateId(String(children))} className="text-xl font-bold mt-4 mb-2 text-gray-800 dark:text-gray-200 scroll-mt-32" {...props}>{children}</h3>,
                    ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 text-gray-600 dark:text-gray-400" {...props} />,
                    ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 text-gray-600 dark:text-gray-400" {...props} />,
                    li: ({node, ...props}) => <li className="mb-1" {...props} />,
@@ -127,7 +141,6 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
              </div>
           </article>
 
-          {/* [Right] Table of Contents (Sticky) */}
           <TableOfContents content={post.content} />
         </div>
       </div>

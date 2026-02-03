@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, FileText, List, Settings, LogOut, PenTool, ArrowLeft, Activity } from 'lucide-react';
+import { LayoutDashboard, FileText, List, LogOut, PenTool, ArrowLeft, Activity } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, logout } = useAuth();
+  const { logout } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -42,24 +42,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-purple-100/30 dark:bg-purple-900/20 rounded-full blur-[100px] opacity-50"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
         <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
 
           <aside className="w-full md:w-64 flex-shrink-0">
             <div className="sticky top-28 bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/60 dark:border-gray-700/50 shadow-lg shadow-gray-200/50 dark:shadow-none transition-colors">
 
-                {/* Admin Logo Area */}
                 <div className="mb-8 px-2 flex items-center justify-between">
                      <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">S</div>
-                        <span className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">eungTae</span>
+                        <span className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">Admin</span>
                      </div>
                      <Link href="/" className="md:hidden p-2 text-gray-400 hover:text-blue-600">
                         <ArrowLeft size={20}/>
                      </Link>
                 </div>
 
-                {/* Navigation Menu */}
                 <nav className="space-y-2">
                     {menuItems.map((item) => {
                         const isActive = pathname === item.href;
@@ -80,7 +78,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
-                {/* Bottom Actions */}
                 <div className="mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50 space-y-3">
                     <Link
                         href="/admin/write"
