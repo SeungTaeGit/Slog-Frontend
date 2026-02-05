@@ -10,6 +10,7 @@ import BackButton from '@/components/BackButton';
 import TableOfContents from '@/components/TableOfContents';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
+import ShareButton from '@/components/ShareButton';
 
 interface PostDetailPageProps {
   params: Promise<{ id: string }>;
@@ -87,8 +88,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
                  <div className="flex items-center gap-2">
                    <AdminButtons postId={post.id} />
                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                   <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><Heart size={20}/></button>
-                   <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><Share2 size={20}/></button>
+                   <ShareButton title={post.title} description={post.excerpt} />
                  </div>
                </div>
              </header>

@@ -29,7 +29,7 @@ export default function UserDropdown() {
         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white">
           <User size={16} />
         </div>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">Dev_Junior</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">Lee SeungTae</span>
         <ChevronDown size={14} className="text-gray-400" />
       </button>
 
